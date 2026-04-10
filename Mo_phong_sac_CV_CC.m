@@ -1,21 +1,21 @@
-% Th�ng s? pack pin 2S
-V_cell_max = 4.2;         % ?i?n �p t?i ?a c?a m?i cell (V)
-V_pack_max = V_cell_max * 2; % ?i?n �p t?i ?a c?a pack 2S (V)
-I_max = 1.04;             % D�ng s?c t?i ?a (A)
-C_bat = 2;                % Dung l??ng pin (Ah)
-SOC_initial = 0.2;        % Tr?ng th�i s?c ban ??u (SOC)
-T_initial = 25;           % Nhi?t ?? ban ??u (?? C)
-T_max_increase = 15;      % T?ng nhi?t ?? t?i ?a trong qu� tr�nh s?c (gi? s? ??n gi?n)
+% Thông số pack pin 2S
+V_cell_max = 4.2;         % Điện áp tối đa của mỗi cell (V)
+V_pack_max = V_cell_max * 2; % Điện áp tối đa của pack 2S (V)
+I_max = 1.04;             % Dòng sạc tối đa (A)
+C_bat = 2;                % Dung lượng pin (Ah)
+SOC_initial = 0.2;        % Trạng thái sạc ban đầu (SOC)
+T_initial = 25;           % Nhiệt độ ban đầu (độ C)
+T_max_increase = 15;      % Tăng nhiệt độ tối đa trong quá trình sạc (giả sử đơn giản)
 
-% Gi?i h?n SOC khi ??t ?i?n �p t?i ?a (tr?ng th�i tr??c giai ?o?n CV)
+% Giới hạn SOC khi đạt điện áp tối đa (trạng thái trước giai đoạn CV)
 SOC_at_Vmax = 0.8;
 
-% Th?i gian m� ph?ng
-t_total = 2 * 3600;       % T?ng th?i gian m� ph?ng (gi�y)
-dt = 1;                   % B??c th?i gian (gi�y)
+% Thời gian mô phỏng
+t_total = 2 * 3600;       % Tổng thời gian mô phỏng (giây)
+dt = 1;                   % Bước thời gian (giây)
 time = 0:dt:t_total;
 
-% Kh?i t?o bi?n
+% Khởi tạo biến
 V_pack = zeros(size(time));
 I_charge = zeros(size(time));
 SOC = zeros(size(time));
@@ -23,70 +23,70 @@ Temperature = zeros(size(time));
 SOC(1) = SOC_initial;
 Temperature(1) = T_initial;
 
-% S?c CC-CV cho pack 2S
+% Sạc CC-CV cho pack 2S
 for k = 2:length(time)
-    % T�nh ?i?n �p pack d?a v�o SOC (??n gi?n h�a tuy?n t�nh)
+    % Tính điện áp pack dựa vào SOC (đơn giản hóa tuyến tính)
     V_pack(k) = V_pack_max * min(SOC(k-1), SOC_at_Vmax);
     
-    % Giai ?o?n s?c CC
+    % Giai đoạn sạc CC
     if SOC(k-1) < SOC_at_Vmax
         I_charge(k) = I_max;
     else
-        % Giai ?o?n s?c CV: D�ng s?c gi?m d?n
+        % Giai đoạn sạc CV: Dòng sạc giảm dần
         I_charge(k) = max(0, I_max * (1 - (SOC(k-1) - SOC_at_Vmax) / (1 - SOC_at_Vmax)));
     end
     
-    % C?p nh?t SOC
+    % Cập nhật SOC
     SOC(k) = SOC(k-1) + (I_charge(k) * dt) / (C_bat * 3600);
-    SOC(k) = min(SOC(k), 1);  % Gi?i h?n SOC t?i ?a l� 100%
+    SOC(k) = min(SOC(k), 1);  % Giới hạn SOC tối đa là 100%
     
-    % C?p nh?t nhi?t ?? (gi? s? nhi?t ?? t?ng theo d�ng s?c)
+    % Cập nhật nhiệt độ (giả sử nhiệt độ tăng theo dòng sạc)
     if I_charge(k) > 0
         Temperature(k) = Temperature(k-1) + (T_max_increase / t_total) * dt;
     else
-        % Nhi?t ?? gi?m d?n khi s?c xong
+        % Nhiệt độ giảm dần khi sạc xong
         Temperature(k) = max(T_initial, Temperature(k-1) - (T_max_increase / t_total) * dt);
     end
 end
 
-% V? ?? th?
+% Vẽ đồ thị
 figure;
 
-% ?? th? Voltage
+% Đồ thị Voltage
 subplot(4,1,1);
-plot(time/3600, V_pack, 'r', 'LineWidth', 1.5);  % ?? th? ?i?n �p m�u ??
-xlabel('Th?i gian (gi?)');
-ylabel('?i?n �p (V)');
-title('Bi?u ?? ?i?n �p (Voltage)');
+plot(time/3600, V_pack, 'r', 'LineWidth', 1.5);  % Đồ thị điện áp màu đỏ
+xlabel('Thời gian (giờ)');
+ylabel('Điện áp (V)');
+title('Biểu đồ Điện áp (Voltage)');
 grid on;
 ylim([0 9]);                      
 yticks(0:1:9);                    
 
-% ?? th? Current
+% Đồ thị Current
 subplot(4,1,2);
-plot(time/3600, I_charge, 'b', 'LineWidth', 1.5);  % ?? th? d�ng s?c m�u xanh
-xlabel('Th?i gian (gi?)');
-ylabel('D�ng s?c (A)');
-title('Bi?u ?? D�ng ?i?n (Current)');
+plot(time/3600, I_charge, 'b', 'LineWidth', 1.5);  % Đồ thị dòng sạc màu xanh
+xlabel('Thời gian (giờ)');
+ylabel('Dòng sạc (A)');
+title('Biểu đồ Dòng điện (Current)');
 grid on;
 ylim([0 1.2]);                    
 yticks(0:0.2:1.2);                
 
-% ?? th? SOC
+% Đồ thị SOC
 subplot(4,1,3);
-plot(time/3600, SOC * 100, 'g', 'LineWidth', 1.5);  % ?? th? SOC m�u xanh l�
-xlabel('Th?i gian (gi?)');
-ylabel('M?c s?c SOC (%)');
-title('Tr?ng th�i s?c (SOC)');
+plot(time/3600, SOC * 100, 'g', 'LineWidth', 1.5);  % Đồ thị SOC màu xanh lá
+xlabel('Thời gian (giờ)');
+ylabel('Mức sạc SOC (%)');
+title('Trạng thái sạc (SOC)');
 grid on;
 yticks(0:20:100);                 
 
-% ?? th? Temperature
+% Đồ thị Temperature
 subplot(4,1,4);
-plot(time/3600, Temperature, 'Color', [1 0.5 0], 'LineWidth', 1.5);  % ?? th? nhi?t ?? m�u cam
-xlabel('Th?i gian (gi?)');
-ylabel('Nhi?t ?? (�C)');
-title('Bi?u ?? Nhi?t ??');
+plot(time/3600, Temperature, 'Color', [1 0.5 0], 'LineWidth', 1.5);  % Đồ thị nhiệt độ màu cam
+xlabel('Thời gian (giờ)');
+ylabel('Nhiệt độ (°C)');
+title('Biểu đồ Nhiệt độ');
 grid on;
 ylim([0 40]);                     
-yticks(0:10:40);                  
+yticks(0:10:40); 
